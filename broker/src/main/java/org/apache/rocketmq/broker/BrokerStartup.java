@@ -48,6 +48,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.TLS_ENABLE;
 
+/**
+ * Broker Server 代理服务启动类
+ */
 public class BrokerStartup {
     public static Properties properties = null;
     public static CommandLine commandLine = null;
@@ -55,12 +58,16 @@ public class BrokerStartup {
     public static InternalLogger log;
 
     public static void main(String[] args) {
+        // 启动 Broker Server 之前，需要添加环境变量 <code>ROCKETMQ_HOME</code> 变量（参考 {@code rocketmq_dir}/bin/mqbroker 脚本）
+        System.setProperty(MixAll.ROCKETMQ_HOME_PROPERTY, "/usr/local/opt/rocketmq-4.4.0");
+
         start(createBrokerController(args));
     }
 
     public static BrokerController start(BrokerController controller) {
         try {
 
+            // 启动 BrokerServer 控制器
             controller.start();
 
             String tip = "The broker[" + controller.getBrokerConfig().getBrokerName() + ", "
@@ -101,6 +108,7 @@ public class BrokerStartup {
         try {
             //PackageConflictDetect.detectFastjson();
             Options options = ServerUtil.buildCommandlineOptions(new Options());
+            // 解析启动参数
             commandLine = ServerUtil.parseCmdLine("mqbroker", args, buildCommandlineOptions(options),
                 new PosixParser());
             if (null == commandLine) {
@@ -113,6 +121,7 @@ public class BrokerStartup {
 
             nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
                 String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
+            // Broker Server 默认端口 10911
             nettyServerConfig.setListenPort(10911);
             final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
@@ -207,20 +216,20 @@ public class BrokerStartup {
             MixAll.printObjectProperties(log, nettyClientConfig);
             MixAll.printObjectProperties(log, messageStoreConfig);
 
-            final BrokerController controller = new BrokerController(
-                brokerConfig,
-                nettyServerConfig,
-                nettyClientConfig,
-                messageStoreConfig);
+            // 使用 brokerConfig、nettyServerConfig、nettyClientConfig、messageStoreConfig配置，创建 NamesrvController
+            final BrokerController controller = new BrokerController(brokerConfig, nettyServerConfig,
+                    nettyClientConfig, messageStoreConfig);
             // remember all configs to prevent discard
             controller.getConfiguration().registerConfig(properties);
 
+            // 初始化 BrokerController 控制器
             boolean initResult = controller.initialize();
             if (!initResult) {
                 controller.shutdown();
                 System.exit(-3);
             }
 
+            // 注册 JVM ShutdownHook
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 private volatile boolean hasShutdown = false;
                 private AtomicInteger shutdownTimes = new AtomicInteger(0);
@@ -260,14 +269,17 @@ public class BrokerStartup {
     }
 
     private static Options buildCommandlineOptions(final Options options) {
+        // 使用启动参数中的 -c 指定 Broker Server 的配置文件地址
         Option opt = new Option("c", "configFile", true, "Broker config properties file");
         opt.setRequired(false);
         options.addOption(opt);
 
+        // 使用启动参数中的 -p 指定 Broker Server 是否需要打印所有的配置项
         opt = new Option("p", "printConfigItem", false, "Print all config item");
         opt.setRequired(false);
         options.addOption(opt);
 
+        // 使用启动参数中的 -m 指定 Broker Server 是否需要打印重要的配置项信息
         opt = new Option("m", "printImportantConfig", false, "Print important config item");
         opt.setRequired(false);
         options.addOption(opt);

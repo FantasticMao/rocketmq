@@ -41,6 +41,9 @@ import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.srvutil.ShutdownHookThread;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Name Server 名字服务启动类
+ */
 public class NamesrvStartup {
 
     private static InternalLogger log;
@@ -48,6 +51,9 @@ public class NamesrvStartup {
     private static CommandLine commandLine = null;
 
     public static void main(String[] args) {
+        // 启动 Name Server 之前，需要添加环境变量 <code>ROCKETMQ_HOME</code> 变量（参考 {@code rocketmq_dir}/bin/mqnamesrv 脚本）
+        System.setProperty(MixAll.ROCKETMQ_HOME_PROPERTY, "/usr/local/opt/rocketmq-4.4.0");
+
         main0(args);
     }
 
@@ -81,7 +87,9 @@ public class NamesrvStartup {
 
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
+        // Name Server 默认端口 9876
         nettyServerConfig.setListenPort(9876);
+
         if (commandLine.hasOption('c')) {
             String file = commandLine.getOptionValue('c');
             if (file != null) {
@@ -123,6 +131,7 @@ public class NamesrvStartup {
         MixAll.printObjectProperties(log, namesrvConfig);
         MixAll.printObjectProperties(log, nettyServerConfig);
 
+        // 使用 namesrvConfig、nettyServerConfig 配置，创建 NamesrvController
         final NamesrvController controller = new NamesrvController(namesrvConfig, nettyServerConfig);
 
         // remember all configs to prevent discard
@@ -137,12 +146,14 @@ public class NamesrvStartup {
             throw new IllegalArgumentException("NamesrvController is null");
         }
 
+        // 初始化 NameServer 控制器
         boolean initResult = controller.initialize();
         if (!initResult) {
             controller.shutdown();
             System.exit(-3);
         }
 
+        // 注册 JVM ShutdownHook
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(log, new Callable<Void>() {
             @Override
             public Void call() throws Exception {
@@ -151,6 +162,7 @@ public class NamesrvStartup {
             }
         }));
 
+        // 启动 NameServer 控制器
         controller.start();
 
         return controller;
