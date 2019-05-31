@@ -229,9 +229,12 @@ public class BrokerController {
         return queryThreadPoolQueue;
     }
 
+    /**
+     * 初始化 BrokerController 控制器
+     */
     public boolean initialize() throws CloneNotSupportedException {
+        // 从 ${home}/store/config/ 目录下加载各种配置文件
         boolean result = this.topicConfigManager.load();
-
         result = result && this.consumerOffsetManager.load();
         result = result && this.subscriptionGroupManager.load();
         result = result && this.consumerFilterManager.load();

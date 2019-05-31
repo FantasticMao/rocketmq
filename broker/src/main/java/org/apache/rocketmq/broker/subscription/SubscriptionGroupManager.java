@@ -151,6 +151,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         if (jsonString != null) {
             SubscriptionGroupManager obj = RemotingSerializable.fromJson(jsonString, SubscriptionGroupManager.class);
             if (obj != null) {
+                // 从 ${home}/store/config/subscriptionGroup.json 配置文件中，加载配置至 subscriptionGroupTable、dataVersion 变量
                 this.subscriptionGroupTable.putAll(obj.subscriptionGroupTable);
                 this.dataVersion.assignNewOne(obj.dataVersion);
                 this.printLoadDataWhenFirstBoot(obj);
