@@ -294,6 +294,20 @@ public class MQClientAPIImpl {
         return sendMessage(addr, brokerName, msg, requestHeader, timeoutMillis, communicationMode, null, null, null, 0, context, producer);
     }
 
+    /**
+     * @param addr                     Broker 地址
+     * @param brokerName               Broker 名称
+     * @param msg                      Message
+     * @param requestHeader            SendMessageRequestHeader
+     * @param timeoutMillis            超时时间
+     * @param communicationMode        发送模式
+     * @param sendCallback             回调方法
+     * @param topicPublishInfo         路由信息
+     * @param instance                 MQ Client 实例
+     * @param retryTimesWhenSendFailed 重试次数
+     * @param context                  发送消息上下文
+     * @param producer                 Producer
+     */
     public SendResult sendMessage(
         final String addr,
         final String brokerName,
@@ -319,6 +333,7 @@ public class MQClientAPIImpl {
 
         request.setBody(msg.getBody());
 
+        // 发送消息逻辑
         switch (communicationMode) {
             case ONEWAY:
                 this.remotingClient.invokeOneway(addr, request, timeoutMillis);
@@ -353,8 +368,10 @@ public class MQClientAPIImpl {
         final long timeoutMillis,
         final RemotingCommand request
     ) throws RemotingException, MQBrokerException, InterruptedException {
+        // 同步发送消息
         RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
         assert response != null;
+        // 处理发送结果
         return this.processSendResponse(brokerName, msg, response);
     }
 
