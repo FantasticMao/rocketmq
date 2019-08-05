@@ -580,7 +580,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                             case SYNC:
                                 if (sendResult.getSendStatus() != SendStatus.SEND_OK) {
                                     if (this.defaultMQProducer.isRetryAnotherBrokerWhenNotStoreOK()) {
-                                        // 同步发送失败，尝试向另一台 Broker 发送消息
+                                        // Broker 刷盘失败，尝试向另一台 Broker 发送消息
                                         continue;
                                     }
                                 }

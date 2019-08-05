@@ -68,6 +68,8 @@ public class TopicPublishInfo {
 
     /**
      * 根据 Topic 路由信息，选择 MessageQueue
+     *
+     * @param lastBrokerName 不会选择上次失败的 Broker
      */
     public MessageQueue selectOneMessageQueue(final String lastBrokerName) {
         if (lastBrokerName == null) {
