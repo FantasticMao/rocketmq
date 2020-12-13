@@ -49,15 +49,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.TLS_ENABLE;
 
 /**
- * Broker Server 代理服务启动类
+ * Broker Server 启动类
  *
- * <p>RocketMQ工作流程:</p>
+ * <p>RocketMQ 工作流程:</p>
  * <ul>
- *      <li>启动NameServer，NameServer起来后监听端口，等待Broker、Producer、Consumer连上来，相当于一个路由控制中心。</li>
- *      <li>Broker启动，跟所有的NameServer保持长连接，定时发送心跳包。心跳包中包含当前Broker信息(IP+端口等)以及存储所有Topic信息。注册成功后，NameServer集群中就有Topic跟Broker的映射关系。</li>
- *      <li>收发消息前，先创建Topic，创建Topic时需要指定该Topic要存储在哪些Broker上，也可以在发送消息时自动创建Topic。</li>
- *      <li>Producer发送消息，启动时先跟NameServer集群中的其中一台建立长连接，并从NameServer中获取当前发送的Topic存在哪些Broker上，轮询从队列列表中选择一个队列，然后与队列所在的Broker建立长连接从而向Broker发消息。</li>
- *      <li>Consumer跟Producer类似，跟其中一台NameServer建立长连接，获取当前订阅Topic存在哪些Broker上，然后直接跟Broker建立连接通道，开始消费消息。</li>
+ *      <li>启动 NameServer 并且监听端口，等待 Broker、Producer、Consumer 连接。NameServer 相当于一个路由控制中心。</li>
+ *      <li>启动 Broker 会与 NameServer 集群中的所有实例保持长连接，并且定时发送心跳包。心跳包中包含了当前 Broker 信息（例如 IP、Port）以及存储的所有 Topic 信息。
+ *          注册成功后，NameServer 集群中就有了 Topic 跟 Broker 的映射关系。</li>
+ *      <li>Producer 发送消息前需要先创建 Topic。创建 Topic 时需要指定该 Topic 会存储在哪些 Broker 中。</li>
+ *      <li>启动 Producer 会与 NameServer 集群中的其中一台实例建立长连接，并从 NameServer 中获取当前发送的 Topic 存在哪些 Broker 上，
+ *          然后轮询队列列表，从中选择一个队列，然后与队列所在的 Broker 建立长连接并且向 Broker 发消息。</li>
+ *      <li>Consumer 跟 Producer 类似，启动时会与其中一台 NameServer 集群中的其中一台实例建立长连接，获取当前订阅 Topic 存在哪些 Broker 上，
+ *          然后直接跟 Broker 建立连接通道，开始消费消息。</li>
  * </ul>
  */
 public class BrokerStartup {
@@ -139,6 +142,7 @@ public class BrokerStartup {
                 messageStoreConfig.setAccessMessageInMemoryMaxRatio(ratio);
             }
 
+            // 以文件形式读取 Broker 配置
             if (commandLine.hasOption('c')) {
                 String file = commandLine.getOptionValue('c');
                 if (file != null) {
@@ -225,7 +229,7 @@ public class BrokerStartup {
             MixAll.printObjectProperties(log, nettyClientConfig);
             MixAll.printObjectProperties(log, messageStoreConfig);
 
-            // 使用 brokerConfig、nettyServerConfig、nettyClientConfig、messageStoreConfig配置，创建 NamesrvController
+            // 使用 brokerConfig、nettyServerConfig、nettyClientConfig、messageStoreConfig 配置，创建 BrokerController
             final BrokerController controller = new BrokerController(brokerConfig, nettyServerConfig,
                     nettyClientConfig, messageStoreConfig);
             // remember all configs to prevent discard

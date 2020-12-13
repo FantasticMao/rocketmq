@@ -595,6 +595,14 @@ public class MQClientInstance {
         }
     }
 
+    /**
+     * 尝试从 NameServer 获取 Topic 路由信息，并更新本地的 Topic 路由信息缓存。
+     *
+     * @param topic Topic
+     * @param isDefault 该 Topic 是否为由 Producer 在发送消息时创建的
+     * @param defaultMQProducer {@code isDefault} 为 True 时对应的 Producer
+     * @return 是否需要更新 && 并且更新成功
+     */
     public boolean updateTopicRouteInfoFromNameServer(final String topic, boolean isDefault,
         DefaultMQProducer defaultMQProducer) {
         try {
@@ -602,6 +610,7 @@ public class MQClientInstance {
                 try {
                     TopicRouteData topicRouteData;
                     if (isDefault && defaultMQProducer != null) {
+                        // 从 NameServer 获取特殊 Topic "TBW102" 的路由信息
                         topicRouteData = this.mQClientAPIImpl.getDefaultTopicRouteInfoFromNameServer(defaultMQProducer.getCreateTopicKey(),
                             1000 * 3);
                         if (topicRouteData != null) {
@@ -616,6 +625,7 @@ public class MQClientInstance {
                     }
                     if (topicRouteData != null) {
                         TopicRouteData old = this.topicRouteTable.get(topic);
+                        // 是否需要更新本地的 Topic 路由信息缓存
                         boolean changed = topicRouteDataIsChange(old, topicRouteData);
                         if (!changed) {
                             changed = this.isNeedUpdateTopicRouteInfo(topic);

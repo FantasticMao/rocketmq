@@ -535,6 +535,9 @@ public class BrokerController {
         }
     }
 
+    /**
+     * Broker 端默认的网络请求处理器，通过 {@link RemotingCommand#getCode()} 字段和 {@link RequestCode} 枚举来处理不同类型的请求。
+     */
     public void registerProcessor() {
         /**
          * SendMessageProcessor
@@ -599,6 +602,8 @@ public class BrokerController {
 
         /**
          * Default
+         *
+         * Broker 端默认的网络请求处理器
          */
         AdminBrokerProcessor adminProcessor = new AdminBrokerProcessor(this);
         this.remotingServer.registerDefaultProcessor(adminProcessor, this.adminBrokerExecutor);
@@ -826,10 +831,12 @@ public class BrokerController {
     }
 
     public void start() throws Exception {
+        // 消息存储模块
         if (this.messageStore != null) {
             this.messageStore.start();
         }
 
+        // 网络通讯模块
         if (this.remotingServer != null) {
             this.remotingServer.start();
         }
