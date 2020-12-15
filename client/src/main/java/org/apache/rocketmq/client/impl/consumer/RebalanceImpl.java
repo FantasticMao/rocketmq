@@ -258,7 +258,9 @@ public abstract class RebalanceImpl {
                 break;
             }
             case CLUSTERING: {
+                // 待消费的 Topic 对应的所有 MessageQueue
                 Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
+                // 待消费的 Topic 和 ConsumerGroup 对应的所有 Consumer
                 List<String> cidAll = this.mQClientFactory.findConsumerIdList(topic, consumerGroup);
                 if (null == mqSet) {
                     if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
@@ -277,6 +279,7 @@ public abstract class RebalanceImpl {
                     Collections.sort(mqAll);
                     Collections.sort(cidAll);
 
+                    // 分配队列的策略，用于实现 Consumer 端的负载均衡
                     AllocateMessageQueueStrategy strategy = this.allocateMessageQueueStrategy;
 
                     List<MessageQueue> allocateResult = null;

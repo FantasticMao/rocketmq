@@ -556,7 +556,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             String[] brokersSent = new String[timesTotal];
             for (; times < timesTotal; times++) {
                 String lastBrokerName = null == mq ? null : mq.getBrokerName();
-                // 根据 Topic 路由信息，选择 MessageQueue
+                // 根据 Topic 路由信息选择 MessageQueue，实现 Producer 端的负载均衡
                 MessageQueue mqSelected = this.selectOneMessageQueue(topicPublishInfo, lastBrokerName);
                 if (mqSelected != null) {
                     mq = mqSelected;

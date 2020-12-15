@@ -82,6 +82,13 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * RocketMQ 客户端实例
+ *
+ * <p>通过 {@link MQClientManager} 来访问 clientId 对应的 {@link MQClientInstance} 单例
+ *
+ * @see MQClientManager
+ */
 public class MQClientInstance {
     private final static long LOCK_TIMEOUT_MILLIS = 3000;
     private final InternalLogger log = ClientLogger.getLog();
