@@ -84,6 +84,7 @@ public class ProcessQueue {
             try {
                 this.lockTreeMap.readLock().lockInterruptibly();
                 try {
+                    // 获取本地消费超时的消息
                     if (!msgTreeMap.isEmpty() && System.currentTimeMillis() - Long.parseLong(MessageAccessor.getConsumeStartTimeStamp(msgTreeMap.firstEntry().getValue())) > pushConsumer.getConsumeTimeout() * 60 * 1000) {
                         msg = msgTreeMap.firstEntry().getValue();
                     } else {
@@ -99,6 +100,7 @@ public class ProcessQueue {
 
             try {
 
+                // 将消费超时的消息发回给 Broker，用于消费重试
                 pushConsumer.sendMessageBack(msg, 3);
                 log.info("send expire msg back. topic={}, msgId={}, storeHost={}, queueId={}, queueOffset={}", msg.getTopic(), msg.getMsgId(), msg.getStoreHost(), msg.getQueueId(), msg.getQueueOffset());
                 try {
@@ -106,6 +108,7 @@ public class ProcessQueue {
                     try {
                         if (!msgTreeMap.isEmpty() && msg.getQueueOffset() == msgTreeMap.firstKey()) {
                             try {
+                                // 删除本地消费超时的消息
                                 removeMessage(Collections.singletonList(msg));
                             } catch (Exception e) {
                                 log.error("send expired msg exception", e);

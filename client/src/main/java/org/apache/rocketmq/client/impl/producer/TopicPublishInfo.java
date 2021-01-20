@@ -66,10 +66,16 @@ public class TopicPublishInfo {
         this.haveTopicRouterInfo = haveTopicRouterInfo;
     }
 
+    /**
+     * 根据 Topic 路由信息，选择 MessageQueue
+     *
+     * @param lastBrokerName 不会选择上次失败的 Broker
+     */
     public MessageQueue selectOneMessageQueue(final String lastBrokerName) {
         if (lastBrokerName == null) {
             return selectOneMessageQueue();
         } else {
+            // 选择算法：使用自增的 index 对 MessageQueue 长度取模
             int index = this.sendWhichQueue.getAndIncrement();
             for (int i = 0; i < this.messageQueueList.size(); i++) {
                 int pos = Math.abs(index++) % this.messageQueueList.size();
@@ -84,7 +90,11 @@ public class TopicPublishInfo {
         }
     }
 
+    /**
+     * 根据 Topic 路由信息，选择 MessageQueue
+     */
     public MessageQueue selectOneMessageQueue() {
+        // 选择算法：使用自增的 index 对 MessageQueue 长度取模
         int index = this.sendWhichQueue.getAndIncrement();
         int pos = Math.abs(index) % this.messageQueueList.size();
         if (pos < 0)

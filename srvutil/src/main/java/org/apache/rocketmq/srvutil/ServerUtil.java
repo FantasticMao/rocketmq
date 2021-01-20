@@ -27,12 +27,13 @@ import org.apache.commons.cli.ParseException;
 public class ServerUtil {
 
     public static Options buildCommandlineOptions(final Options options) {
+        // 使用启动参数中的 -h 指定 Broker Server 是否需要打印帮助信息
         Option opt = new Option("h", "help", false, "Print help");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt =
-            new Option("n", "namesrvAddr", true,
+        // 使用启动参数中的 -n ${ip}:${port} 指定 Broker Server 对应的 Name Server 地址列表
+        opt = new Option("n", "namesrvAddr", true,
                 "Name server address list, eg: 192.168.0.1:9876;192.168.0.2:9876");
         opt.setRequired(false);
         options.addOption(opt);

@@ -41,6 +41,18 @@ import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.srvutil.ShutdownHookThread;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Name Server 名字服务启动类
+ *
+ * <p>RocketMQ工作流程:</p>
+ * <ul>
+ *      <li>启动NameServer，NameServer起来后监听端口，等待Broker、Producer、Consumer连上来，相当于一个路由控制中心。</li>
+ *      <li>Broker启动，跟所有的NameServer保持长连接，定时发送心跳包。心跳包中包含当前Broker信息(IP+端口等)以及存储所有Topic信息。注册成功后，NameServer集群中就有Topic跟Broker的映射关系。</li>
+ *      <li>收发消息前，先创建Topic，创建Topic时需要指定该Topic要存储在哪些Broker上，也可以在发送消息时自动创建Topic。</li>
+ *      <li>Producer发送消息，启动时先跟NameServer集群中的其中一台建立长连接，并从NameServer中获取当前发送的Topic存在哪些Broker上，轮询从队列列表中选择一个队列，然后与队列所在的Broker建立长连接从而向Broker发消息。</li>
+ *      <li>Consumer跟Producer类似，跟其中一台NameServer建立长连接，获取当前订阅Topic存在哪些Broker上，然后直接跟Broker建立连接通道，开始消费消息。</li>
+ * </ul>
+ */
 public class NamesrvStartup {
 
     private static InternalLogger log;
@@ -48,6 +60,9 @@ public class NamesrvStartup {
     private static CommandLine commandLine = null;
 
     public static void main(String[] args) {
+        // 启动 Name Server 之前，需要添加环境变量 <code>ROCKETMQ_HOME</code> 变量（参考 {@code rocketmq_dir}/bin/mqnamesrv 脚本）
+        System.setProperty(MixAll.ROCKETMQ_HOME_PROPERTY, "/usr/local/opt/rocketmq-4.4.0");
+
         main0(args);
     }
 
@@ -81,7 +96,9 @@ public class NamesrvStartup {
 
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
+        // Name Server 默认端口 9876
         nettyServerConfig.setListenPort(9876);
+
         if (commandLine.hasOption('c')) {
             String file = commandLine.getOptionValue('c');
             if (file != null) {
@@ -123,6 +140,7 @@ public class NamesrvStartup {
         MixAll.printObjectProperties(log, namesrvConfig);
         MixAll.printObjectProperties(log, nettyServerConfig);
 
+        // 使用 namesrvConfig、nettyServerConfig 配置，创建 NamesrvController
         final NamesrvController controller = new NamesrvController(namesrvConfig, nettyServerConfig);
 
         // remember all configs to prevent discard
@@ -137,12 +155,14 @@ public class NamesrvStartup {
             throw new IllegalArgumentException("NamesrvController is null");
         }
 
+        // 初始化 NameServer 控制器
         boolean initResult = controller.initialize();
         if (!initResult) {
             controller.shutdown();
             System.exit(-3);
         }
 
+        // 注册 JVM ShutdownHook
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(log, new Callable<Void>() {
             @Override
             public Void call() throws Exception {
@@ -151,6 +171,7 @@ public class NamesrvStartup {
             }
         }));
 
+        // 启动 NameServer 控制器
         controller.start();
 
         return controller;

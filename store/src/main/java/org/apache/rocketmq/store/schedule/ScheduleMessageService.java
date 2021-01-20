@@ -44,6 +44,26 @@ import org.apache.rocketmq.store.PutMessageStatus;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 import org.apache.rocketmq.store.config.StorePathConfigHelper;
 
+/**
+ * 定时消息服务
+ *
+ * <p>
+ * 定时消息（延迟队列）是指消息发送到broker后，不会立即被消费，等待特定时间投递给真正的 topic。broker 有配置项 messageDelayLevel，
+ * 默认值为“1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h”，18 个 level。可以配置自定义 messageDelayLevel。
+ * 注意，messageDelayLevel 是 broker 的属性，不属于某个 topic。发消息时，设置 delayLevel 等级即可：msg.setDelayLevel(level)。
+ * level有以下三种情况：
+ * <ul>
+ *      <li><code>level == 0，消息为非延迟消息</code></li>
+ *      <li><code>1<=level<=maxLevel，消息延迟特定时间，例如level==1，延迟1s</code></li>
+ *      <li><code>level > maxLevel，则level== maxLevel，例如level==20，延迟2h</code></li>
+ * </ul>
+ * </p>
+ * <p>
+ * 定时消息会暂存在名为SCHEDULE_TOPIC_XXXX的topic中，并根据delayTimeLevel存入特定的queue，queueId = delayTimeLevel – 1，
+ * 即一个queue只存相同延迟的消息，保证具有相同发送延迟的消息能够顺序消费。broker会调度地消费SCHEDULE_TOPIC_XXXX，将消息写入真实的topic。
+ * </p>
+ * <p>需要注意的是，定时消息会在第一次写入和调度写入真实topic时都会计数，因此发送数量、tps都会变高。</p>
+ */
 public class ScheduleMessageService extends ConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 

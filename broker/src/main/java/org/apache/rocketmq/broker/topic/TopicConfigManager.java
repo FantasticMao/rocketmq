@@ -152,6 +152,9 @@ public class TopicConfigManager extends ConfigManager {
         return this.topicConfigTable.get(topic);
     }
 
+    /**
+     * 在 Broker 端开启 {@link org.apache.rocketmq.common.BrokerConfig#isAutoCreateTopicEnable()} 参数时，在处理消息阶段时自动创建 Topic。
+     */
     public TopicConfig createTopicInSendMessageMethod(final String topic, final String defaultTopic,
         final String remoteAddress, final int clientDefaultTopicQueueNums, final int topicSysFlag) {
         TopicConfig topicConfig = null;
@@ -391,6 +394,11 @@ public class TopicConfigManager extends ConfigManager {
         return encode(false);
     }
 
+    /**
+     * 获取 TopicConfigManager 配置文件地址
+     *
+     * @return ${home}/store/config/topics.json
+     */
     @Override
     public String configFilePath() {
         return BrokerPathConfigHelper.getTopicConfigPath(this.brokerController.getMessageStoreConfig()
@@ -403,6 +411,7 @@ public class TopicConfigManager extends ConfigManager {
             TopicConfigSerializeWrapper topicConfigSerializeWrapper =
                 TopicConfigSerializeWrapper.fromJson(jsonString, TopicConfigSerializeWrapper.class);
             if (topicConfigSerializeWrapper != null) {
+                // 从 ${home}/store/config/topics.json 配置文件中，加载配置至 topicConfigTable、dataVersion 变量
                 this.topicConfigTable.putAll(topicConfigSerializeWrapper.getTopicConfigTable());
                 this.dataVersion.assignNewOne(topicConfigSerializeWrapper.getDataVersion());
                 this.printLoadDataWhenFirstBoot(topicConfigSerializeWrapper);

@@ -293,6 +293,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
                 }
                 break;
             case CLUSTERING:
+                // 将消费超时的消息发回给 Broker，用于消费重试
                 List<MessageExt> msgBackFailed = new ArrayList<MessageExt>(consumeRequest.getMsgs().size());
                 for (int i = ackIndex + 1; i < consumeRequest.getMsgs().size(); i++) {
                     MessageExt msg = consumeRequest.getMsgs().get(i);

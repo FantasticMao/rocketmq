@@ -82,6 +82,13 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * RocketMQ 客户端实例
+ *
+ * <p>通过 {@link MQClientManager} 来访问 clientId 对应的 {@link MQClientInstance} 单例
+ *
+ * @see MQClientManager
+ */
 public class MQClientInstance {
     private final static long LOCK_TIMEOUT_MILLIS = 3000;
     private final InternalLogger log = ClientLogger.getLog();
@@ -226,6 +233,7 @@ public class MQClientInstance {
             switch (this.serviceState) {
                 case CREATE_JUST:
                     this.serviceState = ServiceState.START_FAILED;
+                    // RocketMQ 支持从 URL 中动态发现 NameServer 地址
                     // If not specified,looking address from name server
                     if (null == this.clientConfig.getNamesrvAddr()) {
                         this.mQClientAPIImpl.fetchNameServerAddr();
@@ -234,10 +242,13 @@ public class MQClientInstance {
                     this.mQClientAPIImpl.start();
                     // Start various schedule tasks
                     this.startScheduledTask();
+                    // 开启拉取消息线程
                     // Start pull service
                     this.pullMessageService.start();
+                    // 开启队列负载线程
                     // Start rebalance service
                     this.rebalanceService.start();
+                    // 开启推送消息线程
                     // Start push service
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
                     log.info("the client factory [{}] start OK", this.clientId);
@@ -256,6 +267,7 @@ public class MQClientInstance {
     }
 
     private void startScheduledTask() {
+        // 每间隔两分钟，定时从指定 URL 中动态获取 NameServer 地址
         if (null == this.clientConfig.getNamesrvAddr()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
@@ -270,6 +282,7 @@ public class MQClientInstance {
             }, 1000 * 10, 1000 * 60 * 2, TimeUnit.MILLISECONDS);
         }
 
+        // 每间隔三十秒，定时从 NameServer 更新 Topic 路由信息
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -282,6 +295,8 @@ public class MQClientInstance {
             }
         }, 10, this.clientConfig.getPollNameServerInterval(), TimeUnit.MILLISECONDS);
 
+        // 每间隔三十秒，定时向 Broker 发送心跳
+        // 通过这种方式，Broker 可以感知到 Producer 和 Consumer 是否还可用
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -295,6 +310,7 @@ public class MQClientInstance {
             }
         }, 1000, this.clientConfig.getHeartbeatBrokerInterval(), TimeUnit.MILLISECONDS);
 
+        // 每间隔五秒，持久化所有 Consumer 的消费进度
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -307,6 +323,7 @@ public class MQClientInstance {
             }
         }, 1000 * 10, this.clientConfig.getPersistConsumerOffsetInterval(), TimeUnit.MILLISECONDS);
 
+        // 动态调整线程池大小
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -585,6 +602,14 @@ public class MQClientInstance {
         }
     }
 
+    /**
+     * 尝试从 NameServer 获取 Topic 路由信息，并更新本地的 Topic 路由信息缓存。
+     *
+     * @param topic Topic
+     * @param isDefault 该 Topic 是否为由 Producer 在发送消息时创建的
+     * @param defaultMQProducer {@code isDefault} 为 True 时对应的 Producer
+     * @return 是否需要更新 && 并且更新成功
+     */
     public boolean updateTopicRouteInfoFromNameServer(final String topic, boolean isDefault,
         DefaultMQProducer defaultMQProducer) {
         try {
@@ -592,6 +617,7 @@ public class MQClientInstance {
                 try {
                     TopicRouteData topicRouteData;
                     if (isDefault && defaultMQProducer != null) {
+                        // 从 NameServer 获取特殊 Topic "TBW102" 的路由信息
                         topicRouteData = this.mQClientAPIImpl.getDefaultTopicRouteInfoFromNameServer(defaultMQProducer.getCreateTopicKey(),
                             1000 * 3);
                         if (topicRouteData != null) {
@@ -606,6 +632,7 @@ public class MQClientInstance {
                     }
                     if (topicRouteData != null) {
                         TopicRouteData old = this.topicRouteTable.get(topic);
+                        // 是否需要更新本地的 Topic 路由信息缓存
                         boolean changed = topicRouteDataIsChange(old, topicRouteData);
                         if (!changed) {
                             changed = this.isNeedUpdateTopicRouteInfo(topic);

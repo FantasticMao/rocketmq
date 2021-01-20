@@ -34,6 +34,10 @@ public class KVConfigManager {
     private final NamesrvController namesrvController;
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    /**
+     * KVConfigManager 对 configTable 变量有除了常规 Map 操作之外的操作（如持久化操作），
+     * 所以此处不使用 {@link java.util.concurrent.ConcurrentHashMap}，而使用显示锁 {@link java.util.concurrent.locks.Lock}
+     */
     private final HashMap<String/* Namespace */, HashMap<String/* Key */, String/* Value */>> configTable =
         new HashMap<String, HashMap<String, String>>();
 

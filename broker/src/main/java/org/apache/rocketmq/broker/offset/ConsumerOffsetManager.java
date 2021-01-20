@@ -166,6 +166,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         if (jsonString != null) {
             ConsumerOffsetManager obj = RemotingSerializable.fromJson(jsonString, ConsumerOffsetManager.class);
             if (obj != null) {
+                // 从 ${home}/store/config/consumerOffset.json 配置文件中，加载配置至 offsetTable 变量
                 this.offsetTable = obj.offsetTable;
             }
         }

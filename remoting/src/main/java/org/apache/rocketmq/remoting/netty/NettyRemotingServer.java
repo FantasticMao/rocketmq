@@ -62,6 +62,9 @@ import org.apache.rocketmq.remoting.exception.RemotingTimeoutException;
 import org.apache.rocketmq.remoting.exception.RemotingTooMuchRequestException;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Broker Server 的 TCP 服务端，用于处理来自客户端（Producer/Consumer）的连接，基于 Netty 实现
+ */
 public class NettyRemotingServer extends NettyRemotingAbstract implements RemotingServer {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
     private final ServerBootstrap serverBootstrap;
@@ -396,6 +399,9 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
         }
     }
 
+    /**
+     * Netty 服务端入站请求处理器
+     */
     class NettyServerHandler extends SimpleChannelInboundHandler<RemotingCommand> {
 
         @Override

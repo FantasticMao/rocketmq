@@ -547,10 +547,12 @@ public class CommitLog {
         String topic = msg.getTopic();
         int queueId = msg.getQueueId();
 
+        // 事务消息
         final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());
         if (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE
             || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) {
             // Delay Delivery
+            // 定时消息（延迟队列）
             if (msg.getDelayTimeLevel() > 0) {
                 if (msg.getDelayTimeLevel() > this.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) {
                     msg.setDelayTimeLevel(this.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel());
@@ -1270,6 +1272,7 @@ public class CommitLog {
                     queueOffset, CommitLog.this.defaultMessageStore.now() - beginTimeMills);
             }
 
+            // 消息存储逻辑
             // Initialization of storage space
             this.resetByteBuffer(msgStoreItemMemory, msgLen);
             // 1 TOTALSIZE

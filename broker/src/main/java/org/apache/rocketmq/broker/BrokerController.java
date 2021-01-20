@@ -105,6 +105,9 @@ import org.apache.rocketmq.store.dledger.DLedgerCommitLog;
 import org.apache.rocketmq.store.stats.BrokerStats;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
+/**
+ * Broker Server 控制器
+ */
 public class BrokerController {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final InternalLogger LOG_PROTECTION = InternalLoggerFactory.getLogger(LoggerName.PROTECTION_LOGGER_NAME);
@@ -226,9 +229,12 @@ public class BrokerController {
         return queryThreadPoolQueue;
     }
 
+    /**
+     * 初始化 BrokerController 控制器
+     */
     public boolean initialize() throws CloneNotSupportedException {
+        // 从 ${home}/store/config/ 目录下加载各种配置文件
         boolean result = this.topicConfigManager.load();
-
         result = result && this.consumerOffsetManager.load();
         result = result && this.subscriptionGroupManager.load();
         result = result && this.consumerFilterManager.load();
@@ -529,6 +535,9 @@ public class BrokerController {
         }
     }
 
+    /**
+     * Broker 端默认的网络请求处理器，通过 {@link RemotingCommand#getCode()} 字段和 {@link RequestCode} 枚举来处理不同类型的请求。
+     */
     public void registerProcessor() {
         /**
          * SendMessageProcessor
@@ -593,6 +602,8 @@ public class BrokerController {
 
         /**
          * Default
+         *
+         * Broker 端默认的网络请求处理器
          */
         AdminBrokerProcessor adminProcessor = new AdminBrokerProcessor(this);
         this.remotingServer.registerDefaultProcessor(adminProcessor, this.adminBrokerExecutor);
@@ -820,10 +831,12 @@ public class BrokerController {
     }
 
     public void start() throws Exception {
+        // 消息存储模块
         if (this.messageStore != null) {
             this.messageStore.start();
         }
 
+        // 网络通讯模块
         if (this.remotingServer != null) {
             this.remotingServer.start();
         }

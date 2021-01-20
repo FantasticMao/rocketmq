@@ -229,6 +229,7 @@ public class ConsumerFilterManager extends ConfigManager {
     public void decode(final String jsonString) {
         ConsumerFilterManager load = RemotingSerializable.fromJson(jsonString, ConsumerFilterManager.class);
         if (load != null && load.filterDataByTopic != null) {
+            // 从 ${home}/store/config/consumerFilter.json 配置文件中，加载配置至 filterDataByTopic 变量
             boolean bloomChanged = false;
             for (String topic : load.filterDataByTopic.keySet()) {
                 FilterDataMapByTopic dataMapByTopic = load.filterDataByTopic.get(topic);

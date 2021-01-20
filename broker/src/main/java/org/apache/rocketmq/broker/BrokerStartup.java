@@ -48,6 +48,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.TLS_ENABLE;
 
+/**
+ * Broker Server 启动类
+ *
+ * <p>RocketMQ 工作流程:</p>
+ * <ul>
+ *      <li>启动 NameServer 并且监听端口，等待 Broker、Producer、Consumer 连接。NameServer 相当于一个路由控制中心。</li>
+ *      <li>启动 Broker 会与 NameServer 集群中的所有实例保持长连接，并且定时发送心跳包。心跳包中包含了当前 Broker 信息（例如 IP、Port）以及存储的所有 Topic 信息。
+ *          注册成功后，NameServer 集群中就有了 Topic 跟 Broker 的映射关系。</li>
+ *      <li>Producer 发送消息前需要先创建 Topic。创建 Topic 时需要指定该 Topic 会存储在哪些 Broker 中。</li>
+ *      <li>启动 Producer 会与 NameServer 集群中的其中一台实例建立长连接，并从 NameServer 中获取当前发送的 Topic 存在哪些 Broker 上，
+ *          然后轮询队列列表，从中选择一个队列，然后与队列所在的 Broker 建立长连接并且向 Broker 发消息。</li>
+ *      <li>Consumer 跟 Producer 类似，启动时会与其中一台 NameServer 集群中的其中一台实例建立长连接，获取当前订阅 Topic 存在哪些 Broker 上，
+ *          然后直接跟 Broker 建立连接通道，开始消费消息。</li>
+ * </ul>
+ */
 public class BrokerStartup {
     public static Properties properties = null;
     public static CommandLine commandLine = null;
@@ -55,12 +70,16 @@ public class BrokerStartup {
     public static InternalLogger log;
 
     public static void main(String[] args) {
+        // 启动 Broker Server 之前，需要添加环境变量 <code>ROCKETMQ_HOME</code> 变量（参考 {@code rocketmq_dir}/bin/mqbroker 脚本）
+        System.setProperty(MixAll.ROCKETMQ_HOME_PROPERTY, "/usr/local/opt/rocketmq-4.4.0");
+
         start(createBrokerController(args));
     }
 
     public static BrokerController start(BrokerController controller) {
         try {
 
+            // 启动 BrokerServer 控制器
             controller.start();
 
             String tip = "The broker[" + controller.getBrokerConfig().getBrokerName() + ", "
@@ -101,6 +120,7 @@ public class BrokerStartup {
         try {
             //PackageConflictDetect.detectFastjson();
             Options options = ServerUtil.buildCommandlineOptions(new Options());
+            // 解析启动参数
             commandLine = ServerUtil.parseCmdLine("mqbroker", args, buildCommandlineOptions(options),
                 new PosixParser());
             if (null == commandLine) {
@@ -113,6 +133,7 @@ public class BrokerStartup {
 
             nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
                 String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
+            // Broker Server 默认端口 10911
             nettyServerConfig.setListenPort(10911);
             final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
@@ -121,6 +142,7 @@ public class BrokerStartup {
                 messageStoreConfig.setAccessMessageInMemoryMaxRatio(ratio);
             }
 
+            // 以文件形式读取 Broker 配置
             if (commandLine.hasOption('c')) {
                 String file = commandLine.getOptionValue('c');
                 if (file != null) {
@@ -207,20 +229,20 @@ public class BrokerStartup {
             MixAll.printObjectProperties(log, nettyClientConfig);
             MixAll.printObjectProperties(log, messageStoreConfig);
 
-            final BrokerController controller = new BrokerController(
-                brokerConfig,
-                nettyServerConfig,
-                nettyClientConfig,
-                messageStoreConfig);
+            // 使用 brokerConfig、nettyServerConfig、nettyClientConfig、messageStoreConfig 配置，创建 BrokerController
+            final BrokerController controller = new BrokerController(brokerConfig, nettyServerConfig,
+                    nettyClientConfig, messageStoreConfig);
             // remember all configs to prevent discard
             controller.getConfiguration().registerConfig(properties);
 
+            // 初始化 BrokerController 控制器
             boolean initResult = controller.initialize();
             if (!initResult) {
                 controller.shutdown();
                 System.exit(-3);
             }
 
+            // 注册 JVM ShutdownHook
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 private volatile boolean hasShutdown = false;
                 private AtomicInteger shutdownTimes = new AtomicInteger(0);
@@ -260,14 +282,17 @@ public class BrokerStartup {
     }
 
     private static Options buildCommandlineOptions(final Options options) {
+        // 使用启动参数中的 -c 指定 Broker Server 的配置文件地址
         Option opt = new Option("c", "configFile", true, "Broker config properties file");
         opt.setRequired(false);
         options.addOption(opt);
 
+        // 使用启动参数中的 -p 指定 Broker Server 是否需要打印所有的配置项
         opt = new Option("p", "printConfigItem", false, "Print all config item");
         opt.setRequired(false);
         options.addOption(opt);
 
+        // 使用启动参数中的 -m 指定 Broker Server 是否需要打印重要的配置项信息
         opt = new Option("m", "printImportantConfig", false, "Print important config item");
         opt.setRequired(false);
         options.addOption(opt);

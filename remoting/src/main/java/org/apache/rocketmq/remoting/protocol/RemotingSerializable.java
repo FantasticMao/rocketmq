@@ -19,6 +19,11 @@ package org.apache.rocketmq.remoting.protocol;
 import com.alibaba.fastjson.JSON;
 import java.nio.charset.Charset;
 
+/**
+ * 序列化/反序列化的工具类
+ *
+ * <p>使用 {@link com.alibaba.fastjson.JSON}，以 JSON 格式序列化和反序列化</p>
+ */
 public abstract class RemotingSerializable {
     private final static Charset CHARSET_UTF8 = Charset.forName("UTF-8");
 
@@ -43,6 +48,9 @@ public abstract class RemotingSerializable {
         return JSON.parseObject(json, classOfT);
     }
 
+    /**
+     * @return JSON byte[]
+     */
     public byte[] encode() {
         final String json = this.toJson();
         if (json != null) {
@@ -51,10 +59,17 @@ public abstract class RemotingSerializable {
         return null;
     }
 
+    /**
+     * @return JSON String
+     */
     public String toJson() {
         return toJson(false);
     }
 
+    /**
+     * @param prettyFormat 序列化 JSON 时，是否需要格式化
+     * @return JSON String
+     */
     public String toJson(final boolean prettyFormat) {
         return toJson(this, prettyFormat);
     }
